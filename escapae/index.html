@@ -193,8 +193,8 @@
       document.getElementById("gameCanvas").style.filter = "brightness(" + brightness + "%)";
     });
     document.getElementById('volumeSlider').addEventListener('input', function() {
-      if (window.mp3GainNode) {
-        window.mp3GainNode.gain.value = this.value;
+      if (window.backgroundMusic) {
+        window.backgroundMusic.volume = this.value;
       }
     });
     document.getElementById('sfxSlider').addEventListener('input', function() {

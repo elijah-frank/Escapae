@@ -51,8 +51,6 @@
   
     // Global variables for pause, MP3 audio, and sound effects volume
     let paused = false;
-    let mp3Music = null;
-    let mp3GainNode = null;
     let sfxVolume = 0.5;
   
     let backgroundMusic;
@@ -72,8 +70,14 @@
      * melody layer (sawtooth oscillator) plays an arpeggio.
      */
     function startBackgroundMusic() {
-      // We don't need this anymore since we're using MP3 music
-      return null; // Just return null instead of creating oscillators
+      if (!backgroundMusic) {
+        backgroundMusic = new Audio("/mc-games/escapae/assets/audio/myBackgroundTrack.mp3");
+        backgroundMusic.loop = true;
+        const volumeSlider = document.getElementById('volumeSlider');
+        backgroundMusic.volume = volumeSlider ? volumeSlider.value : 0.5;
+        window.backgroundMusic = backgroundMusic;
+      }
+      backgroundMusic.play().catch(error => console.error("Error playing background music:", error));
     }
   
     /**
@@ -275,7 +279,6 @@
           if (Date.now() - gameOverTimer > GAME_OVER_DURATION) {
             gameState = "start";
             startBtn.style.display = "block";
-            mp3Music = null;
           }
         } else if (gameState === "start") {
           renderStartScreen();
@@ -1015,24 +1018,21 @@
 
     // New function to play an MP3 track in the background
     function startMP3Background() {
-      mp3Music = new Audio("/mc-games/escapae/assets/audio/myTrack.mp3");
-      mp3Music.loop = true;
-      const volumeSlider = document.getElementById('volumeSlider');
-      mp3GainNode = audioContext.createGain();
-      mp3GainNode.gain.value = volumeSlider ? volumeSlider.value : 0.5;
-      const mediaSource = audioContext.createMediaElementSource(mp3Music);
-      mediaSource.connect(mp3GainNode);
-      mp3GainNode.connect(audioContext.destination);
-      mp3Music.play();
-      window.mp3Music = mp3Music;
-      window.mp3GainNode = mp3GainNode;
+      if (!backgroundMusic) {
+        backgroundMusic = new Audio("/mc-games/escapae/assets/audio/myBackgroundTrack.mp3");
+        backgroundMusic.loop = true;
+        const volumeSlider = document.getElementById('volumeSlider');
+        backgroundMusic.volume = volumeSlider ? volumeSlider.value : 0.5;
+        window.backgroundMusic = backgroundMusic;
+      }
+      backgroundMusic.play().catch(error => console.error("Error playing background music:", error));
     }
 
     // New function to stop the MP3 background music.
     function stopMP3Background() {
-      if (mp3Music) {
-        mp3Music.pause();
-        mp3Music.currentTime = 0;
+      if (backgroundMusic) {
+        backgroundMusic.pause();
+        backgroundMusic.currentTime = 0;
       }
     }
 
@@ -1069,15 +1069,10 @@
       }
     }
 
-    function initializeAudio() {
-        backgroundMusic = new Audio("/mc-games/escapae/assets/audio/myBackgroundTrack.mp3");
-    }
-
     function adjustBackgroundVolume(targetVolume) {
-      backgroundMusic.volume = targetVolume; // Set to the target volume
-      setTimeout(() => {
-        backgroundMusic.volume = 0.01; // Reset to low volume after 1 second
-      }, 1000); // 1000 milliseconds = 1 second
+      if (backgroundMusic) {
+        backgroundMusic.volume = targetVolume;
+      }
     }
 
     function updateHighScore() {
