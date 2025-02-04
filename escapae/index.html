@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=0.5, maximum-scale=0.8" />
   <title>Escapae</title>
   <style>
     body {
@@ -16,10 +16,13 @@
       color: white;
       font-family: monospace;
       position: relative;
+      overflow: hidden;
     }
     #gameCanvas {
       border: 1px solid white;
       image-rendering: pixelated;
+      max-width: 100%;
+      height: auto;
     }
     .controls {
       position: absolute;
@@ -73,6 +76,23 @@
       font-size: 1.5rem;
       cursor: pointer;
       z-index: 10;
+    }
+    @media (max-width: 1200px) {
+      body {
+        transform: scale(0.8);
+        transform-origin: top center;
+      }
+      .controls {
+        right: 20px;
+      }
+    }
+    @media (max-width: 800px) {
+      body {
+        transform: scale(0.6);
+      }
+      .controls {
+        right: 10px;
+      }
     }
   </style>
 </head>
