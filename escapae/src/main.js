@@ -1015,7 +1015,7 @@
 
     // New function to play an MP3 track in the background
     function startMP3Background() {
-      mp3Music = new Audio("../assets/audio/myTrack.mp3");
+      mp3Music = new Audio("/mc-games/escapae/assets/audio/myTrack.mp3");
       mp3Music.loop = true;
       const volumeSlider = document.getElementById('volumeSlider');
       mp3GainNode = audioContext.createGain();
@@ -1070,7 +1070,7 @@
     }
 
     function initializeAudio() {
-        backgroundMusic = new Audio("../assets/audio/myBackgroundTrack.mp3");
+        backgroundMusic = new Audio("/mc-games/escapae/assets/audio/myBackgroundTrack.mp3");
     }
 
     function adjustBackgroundVolume(targetVolume) {
