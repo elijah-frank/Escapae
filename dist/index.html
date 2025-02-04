@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escapae</title>
+  <style>body {
+  color: #fff;
+  background-color: #000;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  font-family: monospace;
+  display: flex;
+  position: relative;
+}
+
+#gameCanvas {
+  image-rendering: pixelated;
+  border: 1px solid #fff;
+}
+
+.controls {
+  grid-template-rows: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  display: grid;
+  position: absolute;
+  top: 50%;
+  right: 50px;
+  transform: translateY(-50%);
+}
+
+.controls button {
+  padding: 10px;
+  font-size: 1.5rem;
+}
+
+.up {
+  grid-area: 1 / 2;
+}
+
+.left {
+  grid-area: 2 / 1;
+}
+
+.right {
+  grid-area: 2 / 3;
+}
+
+.down {
+  grid-area: 3 / 2;
+}
+
+#startBtn {
+  cursor: pointer;
+  color: #fff;
+  z-index: 10;
+  background: #000;
+  border: 2px solid #fff;
+  padding: 20px 40px;
+  font-family: monospace;
+  font-size: 2rem;
+  position: absolute;
+  top: 70%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+</style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="1200" height="800"></canvas>
+  <button id="startBtn">ESCAPAE</button>
+  <div class="controls">
+    <button id="upBtn" class="up">↑</button>
+    <button id="leftBtn" class="left">←</button>
+    <button id="rightBtn" class="right">→</button>
+    <button id="downBtn" class="down">↓</button>
+  </div>
+  <script src="/index.de158e3a.js"></script>
+<script src="/pacman.3464ddca.js"></script></body>
+</html>
