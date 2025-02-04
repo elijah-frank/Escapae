@@ -303,131 +303,183 @@
       dotY += currentSpeed * Math.sin(angle);
       wrapAround("dot");
   
-      // Group decision-making for chasers
+      // Update chaser positions with improved pathfinding
       chasers.forEach(chaser => {
-        // Initialize aiType if not set.
         if (chaser.aiType === undefined) chaser.aiType = 1;
   
-        // Reroll this chaser's job periodically.
         if (!chaser.nextJobRoll || Date.now() >= chaser.nextJobRoll) {
           chaser.aiType = Math.floor(Math.random() * 4) + 1;
-          // Next reroll between 10 and 15 seconds from now.
           chaser.nextJobRoll = Date.now() + Math.random() * 5000 + 10000;
         }
   
         let targetX, targetY;
-        switch(chaser.aiType) {
-          case 1:
-            targetX = dotX;
-            targetY = dotY;
-            break;
-          case 2:
-            if (!chaser.targetKey || !collectibles.includes(chaser.targetKey)) {
-              let nearestKey = null;
-              let minDist = Infinity;
-              collectibles.forEach(key => {
-                let d = distanceBetween(chaser.x, chaser.y, key.x, key.y);
-                if (d < minDist) {
-                  minDist = d;
-                  nearestKey = key;
+        
+        // Type 4 slimes don't wrap around - they wander randomly
+        if (chaser.aiType === 4) {
+          if (!chaser.randomTarget || distanceBetween(chaser.x, chaser.y, chaser.randomTarget.x, chaser.randomTarget.y) < 10) {
+            chaser.randomTarget = {
+              x: Math.random() * canvas.width,
+              y: Math.random() * canvas.height
+            };
+          }
+          targetX = chaser.randomTarget.x;
+          targetY = chaser.randomTarget.y;
+        } else {
+          // All other slime types use smart pathfinding with screen wrapping
+          switch(chaser.aiType) {
+            case 1: // Direct chase
+              let paths = [
+                {x: dotX, y: dotY}, // Direct path
+                {x: dotX + canvas.width, y: dotY}, // Wrap right
+                {x: dotX - canvas.width, y: dotY}, // Wrap left
+                {x: dotX, y: dotY + canvas.height}, // Wrap down
+                {x: dotX, y: dotY - canvas.height} // Wrap up
+              ];
+              
+              // Find closest path accounting for mud
+              let bestPath = paths[0];
+              let shortestDist = Infinity;
+              
+              paths.forEach(path => {
+                let dist = distanceBetween(chaser.x, chaser.y, path.x, path.y);
+                // Check if path crosses mud
+                for (let mud of mudPatches) {
+                  let mudDist = distanceBetween(mud.x, mud.y, 
+                    (chaser.x + path.x)/2, (chaser.y + path.y)/2);
+                  if (mudDist < mud.size/2 + MUD_AVOIDANCE_DISTANCE) {
+                    dist += MUD_AVOIDANCE_DISTANCE * 2;
+                  }
+                }
+                if (dist < shortestDist) {
+                  shortestDist = dist;
+                  bestPath = path;
                 }
               });
-              chaser.targetKey = nearestKey;
-            }
-            if (chaser.targetKey) {
-              targetX = chaser.targetKey.x;
-              targetY = chaser.targetKey.y;
-            } else {
-              targetX = dotX;
-              targetY = dotY;
-            }
-            break;
-          case 3:
-            const predictionFactor = 20;
-            targetX = dotX + Math.cos(angle) * speed * predictionFactor;
-            targetY = dotY + Math.sin(angle) * speed * predictionFactor;
-            break;
-          case 4:
-            if (!chaser.randomTarget || distanceBetween(chaser.x, chaser.y, chaser.randomTarget.x, chaser.randomTarget.y) < 10) {
-              chaser.randomTarget = {
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height
-              };
-            }
-            targetX = chaser.randomTarget.x;
-            targetY = chaser.randomTarget.y;
-            break;
-          default:
-            targetX = dotX;
-            targetY = dotY;
-        }
-        
-        // Compute dx, dy (without wrap-around for simplicity here).
-        let dx = targetX - chaser.x;
-        let dy = targetY - chaser.y;
-        
-        // Add mud avoidance repulsion.
-        let repulsionX = 0, repulsionY = 0;
-        for (let mud of mudPatches) {
-          let dxMud = chaser.x - mud.x;
-          let dyMud = chaser.y - mud.y;
-          let distMud = Math.sqrt(dxMud * dxMud + dyMud * dyMud);
-          // effectiveDistance depends on the chaser size and constant offset.
-          let effectiveDistance = MUD_AVOIDANCE_DISTANCE + chaser.size / 2;
-          if (distMud < effectiveDistance && distMud > 0) {
-            // The closer the chaser, the stronger the repulsion.
-            let strength = MUD_AVOIDANCE_STRENGTH * (1 - distMud / effectiveDistance);
-            repulsionX += (dxMud / distMud) * strength;
-            repulsionY += (dyMud / distMud) * strength;
+              
+              targetX = bestPath.x;
+              targetY = bestPath.y;
+              break;
+              
+            case 2: // Key seeker
+              if (!chaser.targetKey || !collectibles.includes(chaser.targetKey)) {
+                let nearestKey = null;
+                let minDist = Infinity;
+                collectibles.forEach(key => {
+                  let paths = [
+                    {x: key.x, y: key.y},
+                    {x: key.x + canvas.width, y: key.y},
+                    {x: key.x - canvas.width, y: key.y},
+                    {x: key.x, y: key.y + canvas.height},
+                    {x: key.x, y: key.y - canvas.height}
+                  ];
+                  
+                  paths.forEach(path => {
+                    let d = distanceBetween(chaser.x, chaser.y, path.x, path.y);
+                    if (d < minDist) {
+                      minDist = d;
+                      nearestKey = key;
+                    }
+                  });
+                });
+                chaser.targetKey = nearestKey;
+              }
+              if (chaser.targetKey) {
+                targetX = chaser.targetKey.x;
+                targetY = chaser.targetKey.y;
+              } else {
+                targetX = dotX;
+                targetY = dotY;
+              }
+              break;
+              
+            case 3: // Prediction chase
+              const predictionFactor = 20;
+              let predictedX = dotX + Math.cos(angle) * speed * predictionFactor;
+              let predictedY = dotY + Math.sin(angle) * speed * predictionFactor;
+              
+              // Find best wrap-around path to predicted position
+              let predPaths = [
+                {x: predictedX, y: predictedY},
+                {x: predictedX + canvas.width, y: predictedY},
+                {x: predictedX - canvas.width, y: predictedY},
+                {x: predictedX, y: predictedY + canvas.height},
+                {x: predictedX, y: predictedY - canvas.height}
+              ];
+              
+              let bestPredPath = predPaths[0];
+              let minPredDist = Infinity;
+              predPaths.forEach(path => {
+                let d = distanceBetween(chaser.x, chaser.y, path.x, path.y);
+                if (d < minPredDist) {
+                  minPredDist = d;
+                  bestPredPath = path;
+                }
+              });
+              
+              targetX = bestPredPath.x;
+              targetY = bestPredPath.y;
+              break;
           }
         }
-        // Adjust dx,dy with the repulsion force from mud.
-        dx += repulsionX;
-        dy += repulsionY;
-        
-        let angleToTarget = Math.atan2(dy, dx);
-        
-        // Add a periodic curved motion.
-        if (!chaser.curveStartTime) {
-          chaser.curveStartTime = Date.now();
-          chaser.curvePhase = Math.random() * Math.PI * 2;
+
+        // Add mud avoidance for all types except type 4
+        if (chaser.aiType !== 4) {
+          let repulsionX = 0, repulsionY = 0;
+          for (let mud of mudPatches) {
+            let dxMud = chaser.x - mud.x;
+            let dyMud = chaser.y - mud.y;
+            let distMud = Math.sqrt(dxMud * dxMud + dyMud * dyMud);
+            let effectiveDistance = MUD_AVOIDANCE_DISTANCE + chaser.size / 2;
+            if (distMud < effectiveDistance && distMud > 0) {
+              let strength = MUD_AVOIDANCE_STRENGTH * (1 - distMud / effectiveDistance);
+              repulsionX += (dxMud / distMud) * strength;
+              repulsionY += (dyMud / distMud) * strength;
+            }
+          }
+          targetX += repulsionX * 50;
+          targetY += repulsionY * 50;
         }
-        let curveOffset = Math.sin((Date.now() - chaser.curveStartTime) / 1000 + chaser.curvePhase) * 0.3;
-        angleToTarget += curveOffset;
+
+        // Move towards target
+        let dx = targetX - chaser.x;
+        let dy = targetY - chaser.y;
+        let angleToTarget = Math.atan2(dy, dx);
         
         chaser.x += chaser.speed * Math.cos(angleToTarget);
         chaser.y += chaser.speed * Math.sin(angleToTarget);
-        wrapAroundChaser(chaser);
+        
+        // Wrap around screen for all types except 4
+        if (chaser.aiType !== 4) {
+          if (chaser.x < 0) chaser.x = canvas.width;
+          if (chaser.x > canvas.width) chaser.x = 0;
+          if (chaser.y < 0) chaser.y = canvas.height;
+          if (chaser.y > canvas.height) chaser.y = 0;
+        }
       });
-      mergeChasers();
-  
-      // Chaser-key collision: if a chaser hits a key, remove the key and split that chaser
+
+      // Chaser-key collision: if a chaser hits a key, remove the key (destroy it)
       for (let i = collectibles.length - 1; i >= 0; i--) {
         const keyItem = collectibles[i];
-        for (let k = 0; k < chasers.length; k++) {
-          if (
-            distanceBetween(chasers[k].x, chasers[k].y, keyItem.x, keyItem.y) <
-            (chasers[k].size / 2 + keyItem.size / 2)
-          ) {
-            collectibles.splice(i, 1);
-            let newAiType = Math.floor(Math.random() * 4) + 1;
-            chasers.splice(k, 1, ...splitChaser(chasers[k], keyItem, newAiType));
+        for (let chaser of chasers) {
+          if (distanceBetween(chaser.x, chaser.y, keyItem.x, keyItem.y) < 
+              (chaser.size / 2 + keyItem.size / 2)) {
+            collectibles.splice(i, 1); // Remove the key
             break;
           }
         }
       }
-  
-      // Player-key collision: if the player collects a key, increment score and split the closest chaser
+
+      // Player-key collision (keep existing logic for player collecting keys)
       for (let i = collectibles.length - 1; i >= 0; i--) {
         const item = collectibles[i];
-        const dxKey = dotX - item.x;
-        const dyKey = dotY - item.y;
-        const distance = Math.sqrt(dxKey * dxKey + dyKey * dyKey);
+        const distance = distanceBetween(dotX, dotY, item.x, item.y);
         if (distance < (dotSize / 2 + item.size / 2)) {
           collectibles.splice(i, 1);
           score++;
           playKeyPickupSound();
-          if (chasers.length > 0) {
+          
+          // Only 25% chance to split a slime when collecting a key
+          if (chasers.length > 0 && Math.random() < 0.25) {
             let closestChaser = chasers[0];
             let minDist = distanceBetween(dotX, dotY, closestChaser.x, closestChaser.y);
             for (let ch of chasers) {
@@ -516,13 +568,6 @@
         if (dotY < 0) dotY = canvas.height;
         else if (dotY > canvas.height) dotY = 0;
       }
-    }
-  
-    function wrapAroundChaser(chaser) {
-      if (chaser.x < 0) chaser.x = canvas.width;
-      else if (chaser.x > canvas.width) chaser.x = 0;
-      if (chaser.y < 0) chaser.y = canvas.height;
-      else if (chaser.y > canvas.height) chaser.y = 0;
     }
   
     function checkCollision() {
@@ -741,6 +786,11 @@
     }
   
     function renderGameOver() {
+      let storedHighScore = parseInt(localStorage.getItem("highScore") || "0", 10);
+      if (score > storedHighScore) {
+        localStorage.setItem("highScore", score);
+        storedHighScore = score;
+      }
       ctx.fillStyle = 'black';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
   
@@ -749,6 +799,10 @@
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
+      
+      ctx.fillStyle = 'white';
+      ctx.font = '40px monospace';
+      ctx.fillText("High Score: " + storedHighScore, canvas.width / 2, canvas.height / 2 + 80);
     }
   
     function renderStartScreen() {
@@ -763,9 +817,20 @@
       }
   
       ctx.fillStyle = 'white';
-      ctx.font = '50px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText("PRESS ESCAPAE TO START", canvas.width / 2, canvas.height / 2);
+      
+      ctx.font = '60px monospace';
+      ctx.fillText("Welcome to Escapae!", canvas.width / 2, canvas.height / 2 - 100);
+      
+      ctx.font = '30px monospace';
+      ctx.fillText("Deep underground, collect golden keys while avoiding giant slimes", canvas.width / 2, canvas.height / 2 - 20);
+      ctx.fillText("and mud patches. Find enough keys to help you escapae!", canvas.width / 2, canvas.height / 2 + 20);
+      
+      ctx.font = '40px monospace';
+      ctx.fillText("Press SPACE or click Start to begin your escape", canvas.width / 2, canvas.height / 2 + 100);
+      
+      ctx.font = '30px monospace';
+      ctx.fillText("High Score: " + (localStorage.getItem("highScore") || 0), canvas.width / 2, canvas.height / 2 + 140);
     }
   
     initializeStars();
@@ -1005,10 +1070,7 @@
     }
 
     function initializeAudio() {
-        backgroundMusic = new Audio("C:/Escapae/assets/audio/myBackgroundTrack.mp3");
-        backgroundMusic.loop = true; // Loop the background music
-        backgroundMusic.volume = 0.01; // Set initial volume very low
-        backgroundMusic.play(); // Start playing the background music
+        backgroundMusic = new Audio("./assets/audio/myBackgroundTrack.mp3");
     }
 
     function adjustBackgroundVolume(targetVolume) {
@@ -1016,6 +1078,21 @@
       setTimeout(() => {
         backgroundMusic.volume = 0.01; // Reset to low volume after 1 second
       }, 1000); // 1000 milliseconds = 1 second
+    }
+
+    function updateHighScore() {
+        fetch("http://localhost:3000/api/highscore", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ game: "escapae", score: score })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Update display
+            document.getElementById("globalHighScore").innerText = 
+                "High Score: " + data.highScore;
+        })
+        .catch(error => console.error("Error updating high score:", error));
     }
 })();
   

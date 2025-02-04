@@ -1,164 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Escapae</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MC Games</title>
   <style>
     body {
-      background-color: black;
       margin: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      color: white;
-      font-family: monospace;
+      background-color: white;
+      color: black;
+      font-family: sans-serif;
       position: relative;
     }
-    #gameCanvas {
-      border: 1px solid white;
-      image-rendering: pixelated;
+    h1 {
+      text-align: center;
+      margin-top: 50px;
     }
-    .controls {
+    .game-box {
       position: absolute;
-      right: 50px;
-      top: 50%;
-      transform: translateY(-50%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-    }
-    .middle-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    #upBtn, #downBtn {
-      position: relative;
-      left: 58px;  /* Fine-tuned position - perfectly centered with pause button */
-    }
-    .controls button {
-      font-size: 1.5rem;
-      padding: 15px;
-      width: 50px;
-      height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    #startBtn {
-      position: absolute;
-      top: 70%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      padding: 20px 40px;
+      top: 100px;
+      left: 20px;
+      background-color: black;
+      color: yellow;
+      padding: 15px 20px;
       font-size: 2rem;
+      text-decoration: none;
+      border: none;
       cursor: pointer;
-      background: black;
-      border: 2px solid white;
-      color: white;
-      font-family: monospace;
-      z-index: 10;
-    }
-    #pauseButton {
-      background: black;
-      border: 2px solid white;
-      color: white;
-      width: 50px;
-      height: 50px;
-      padding: 10px;
-      font-size: 1.5rem;
-      cursor: pointer;
-      z-index: 10;
     }
   </style>
 </head>
 <body>
-  <canvas id="gameCanvas" width="1200" height="800"></canvas>
-  <button id="startBtn">ESCAPAE</button>
-  <div class="controls">
-    <button id="upBtn" class="up">⇧</button>
-    <div class="middle-row">
-      <button id="leftBtn" class="left">⇦</button>
-      <button id="pauseButton">=</button>
-      <button id="rightBtn" class="right">⇨</button>
-    </div>
-    <button id="downBtn" class="down">⇩</button>
-  </div>
-  <div id="settingsMenu" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 30; flex-direction: column; align-items: center; justify-content: center;">
-    <div style="width:300px; text-align:center; color:white;">
-      <h2>Settings</h2>
-      <div style="margin-bottom:10px;">
-        <label for="brightnessSlider">Brightness</label>
-        <input id="brightnessSlider" type="range" min="50" max="300" value="100">
-      </div>
-      <div style="margin-bottom:20px;">
-        <label for="volumeSlider">Music Volume</label>
-        <input id="volumeSlider" type="range" min="0" max="2" step="0.01" value="0.8">
-      </div>
-      <div style="margin-bottom:20px;">
-        <label for="sfxSlider">Sound Effects Volume</label>
-        <input id="sfxSlider" type="range" min="0" max="1" step="0.01" value="0.52">
-      </div>
-      <div style="margin-bottom:20px;">
-        <label for="debugToggle">Debug Mode</label>
-        <input id="debugToggle" type="checkbox">
-      </div>
-      <button id="controlsBtn" style="padding: 10px 20px; font-size: 1.5rem; margin-bottom:10px;">Controls Info</button>
-      <button id="resumeBtn" style="padding: 10px 20px; font-size: 1.5rem; margin-bottom:10px;">Resume</button>
-      <button id="restartBtn" style="padding: 10px 20px; font-size: 1.5rem;">Restart</button>
-    </div>
-  </div>
-  <div id="controlsMenu" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 31; flex-direction: column; align-items: center; justify-content: center;">
-    <div style="width:300px; text-align:center; color:white;">
-      <h2>Keyboard Controls</h2>
-      <p>Arrow Keys: Move the player</p>
-      <p>Space: Toggle Pause/Resume and start game</p>
-      <button id="backBtn" style="padding: 10px 20px; font-size: 1.5rem; margin-top:10px;">Back</button>
-    </div>
-  </div>
-  <script src="./src/main.js"></script>
+  <h1>Welcome to MC Games</h1>
+  <a href="/escapae" class="game-box">Escapae</a>
   <script>
-    // Settings overlay event listeners.
-    document.getElementById('resumeBtn').addEventListener('click', () => {
-      togglePause();
-    });
-
-    document.getElementById('restartBtn').addEventListener('click', () => {
-      location.reload();
-    });
-
-    document.getElementById('brightnessSlider').addEventListener('input', function() {
-      const brightness = this.value;
-      document.getElementById("gameCanvas").style.filter = "brightness(" + brightness + "%)";
-    });
-
-    document.getElementById('volumeSlider').addEventListener('input', function() {
-      if (window.mp3GainNode) {
-        window.mp3GainNode.gain.value = this.value;
-      }
-    });
-
-    document.getElementById('sfxSlider').addEventListener('input', function() {
-      window.setSfxVolume(this.value);
-    });
-
-    document.getElementById('pauseButton').addEventListener('click', () => {
-      togglePause();
-    });
-
-    document.getElementById('controlsBtn').addEventListener('click', () => {
-      document.getElementById('settingsMenu').style.display = "none";
-      document.getElementById('controlsMenu').style.display = "flex";
-    });
-
-    document.getElementById('backBtn').addEventListener('click', () => {
-      document.getElementById('controlsMenu').style.display = "none";
-      document.getElementById('settingsMenu').style.display = "flex";
-    });
+    var highScore = localStorage.getItem("highScore") || 0;
+    document.getElementById("globalHighScore").innerText = "High Score: " + highScore;
   </script>
 </body>
 </html>
