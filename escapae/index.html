@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=0.5, maximum-scale=0.8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Escapae</title>
   <style>
     body {
@@ -17,12 +17,19 @@
       font-family: monospace;
       position: relative;
       overflow: hidden;
+      touch-action: none; /* Prevents default touch behaviors */
+      -webkit-touch-callout: none; /* Prevents callout on long-press */
+      -webkit-user-select: none; /* Prevents text selection */
+      user-select: none;
     }
     #gameCanvas {
       border: 1px solid white;
       image-rendering: pixelated;
-      max-width: 100%;
-      height: auto;
+      width: 100vw;
+      height: 100vh;
+      max-width: 1200px;
+      max-height: 800px;
+      object-fit: contain;
     }
     .controls {
       position: absolute;
@@ -33,6 +40,7 @@
       flex-direction: column;
       align-items: center;
       gap: 10px;
+      z-index: 20;
     }
     .middle-row {
       display: flex;
@@ -77,21 +85,29 @@
       cursor: pointer;
       z-index: 10;
     }
-    @media (max-width: 1200px) {
-      body {
-        transform: scale(0.8);
-        transform-origin: top center;
-      }
+    @media (max-width: 768px) {
       .controls {
         right: 20px;
+        transform: translateY(-50%) scale(0.8);
+      }
+      .controls button {
+        width: 60px;
+        height: 60px;
+        font-size: 24px;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
       }
     }
-    @media (max-width: 800px) {
-      body {
-        transform: scale(0.6);
-      }
+    @media (max-width: 480px) {
       .controls {
         right: 10px;
+        transform: translateY(-50%) scale(0.7);
+      }
+    }
+    @media (max-aspect-ratio: 3/2) {
+      #gameCanvas {
+        width: 100vw;
+        height: auto;
       }
     }
   </style>
