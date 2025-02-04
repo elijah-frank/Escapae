@@ -33,9 +33,14 @@
 <body>
   <h1>Welcome to MC Games</h1>
   <a href="/mc-games/escapae" class="game-box">Escapae</a>
+  <div id="globalHighScore"></div>
   <script>
-    var highScore = localStorage.getItem("highScore") || 0;
-    document.getElementById("globalHighScore").innerText = "High Score: " + highScore;
+    fetch("http://localhost:3000/api/highscore?game=escapae")
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById("globalHighScore").innerText = "High Score: " + data.highScore;
+      })
+      .catch(error => console.error("Error fetching high score:", error));
   </script>
 </body>
 </html>

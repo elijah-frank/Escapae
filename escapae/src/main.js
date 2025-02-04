@@ -789,23 +789,38 @@
     }
   
     function renderGameOver() {
-      let storedHighScore = parseInt(localStorage.getItem("highScore") || "0", 10);
-      if (score > storedHighScore) {
-        localStorage.setItem("highScore", score);
-        storedHighScore = score;
-      }
-      ctx.fillStyle = 'black';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
-      ctx.fillStyle = 'red';
-      ctx.font = '80px monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
-      
-      ctx.fillStyle = 'white';
-      ctx.font = '40px monospace';
-      ctx.fillText("High Score: " + storedHighScore, canvas.width / 2, canvas.height / 2 + 80);
+      // Send score to backend
+      fetch("http://localhost:3000/api/highscore", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ game: "escapae", score: score })
+      })
+      .then(response => response.json())
+      .then(data => {
+        // Draw game over screen with high score from backend
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = 'red';
+        ctx.font = '80px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
+        
+        ctx.fillStyle = 'white';
+        ctx.font = '40px monospace';
+        ctx.fillText("High Score: " + data.highScore, canvas.width / 2, canvas.height / 2 + 80);
+      })
+      .catch(error => {
+        console.error("Error updating high score:", error);
+        // Still show game over screen if high score update fails
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'red';
+        ctx.font = '80px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
+      });
     }
   
     function renderStartScreen() {
