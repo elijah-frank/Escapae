@@ -62,6 +62,15 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      background: black;
+      border: 2px solid white;
+      color: white;
+      cursor: pointer;
+      border-radius: 8px;
+    }
+    .controls button:active {
+      background: #333;
+      transform: scale(0.95);
     }
     #startBtn {
       position: absolute;
@@ -78,14 +87,10 @@
       z-index: 10;
     }
     #pauseButton {
-      background: black;
-      border: 2px solid white;
-      color: white;
       width: 50px;
       height: 50px;
       padding: 10px;
       font-size: 1.5rem;
-      cursor: pointer;
       z-index: 10;
     }
     @media (max-width: 768px) {
@@ -161,56 +166,9 @@
       <button id="backBtn" style="padding: 10px 20px; font-size: 1.5rem; margin-top:10px;">Back</button>
     </div>
   </div>
-  <script src="./src/main.js"></script>
-  <script>
-    // Initialize zoom slider with current scale
-    const zoomSlider = document.getElementById('zoomSlider');
-    const zoomValue = document.getElementById('zoomValue');
-    
-    // Set initial zoom based on screen size
-    if (window.innerWidth <= 480) {
-      zoomSlider.value = 45;
-    } else if (window.innerWidth <= 768) {
-      zoomSlider.value = 65;
-    } else {
-      zoomSlider.value = 100;
-    }
-    
-    zoomSlider.addEventListener('input', function() {
-      const scale = this.value / 100;
-      document.documentElement.style.setProperty('--game-scale', scale);
-      zoomValue.textContent = this.value + '%';
-    });
-
-    document.getElementById('resumeBtn').addEventListener('click', () => {
-      togglePause();
-    });
-    document.getElementById('restartBtn').addEventListener('click', () => {
-      location.reload();
-    });
-    document.getElementById('brightnessSlider').addEventListener('input', function() {
-      const brightness = this.value;
-      document.getElementById("gameCanvas").style.filter = "brightness(" + brightness + "%)";
-    });
-    document.getElementById('volumeSlider').addEventListener('input', function() {
-      if (window.backgroundMusic) {
-        window.backgroundMusic.volume = this.value;
-      }
-    });
-    document.getElementById('sfxSlider').addEventListener('input', function() {
-      window.setSfxVolume(this.value);
-    });
-    document.getElementById('pauseButton').addEventListener('click', () => {
-      togglePause();
-    });
-    document.getElementById('controlsBtn').addEventListener('click', () => {
-      document.getElementById('settingsMenu').style.display = "none";
-      document.getElementById('controlsMenu').style.display = "flex";
-    });
-    document.getElementById('backBtn').addEventListener('click', () => {
-      document.getElementById('controlsMenu').style.display = "none";
-      document.getElementById('settingsMenu').style.display = "flex";
-    });
+  <script type="module">
+    import './src/main.js';
+    import './src/menuControls.js';
   </script>
 </body>
 </html> 
