@@ -32,3 +32,5 @@ assets/audio/*
 # Distribution/build files
 dist/
 build/ 
+
+.parcel-cache/
