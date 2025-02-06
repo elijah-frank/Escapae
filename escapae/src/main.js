@@ -1034,10 +1034,11 @@
     // New function to play an MP3 track in the background
     function startMP3Background() {
       if (!backgroundMusic) {
-        backgroundMusic = new Audio("/mc-games/escapae/assets/audio/myBackgroundTrack.mp3");
+        // Use a relative path based on index.html location
+        backgroundMusic = new Audio("assets/audio/myBackgroundTrack.mp3");
         backgroundMusic.loop = true;
-        const volumeSlider = document.getElementById('volumeSlider');
-        backgroundMusic.volume = volumeSlider ? volumeSlider.value : 0.5;
+        const volumeSlider = document.getElementById("volumeSlider");
+        backgroundMusic.volume = volumeSlider ? parseFloat(volumeSlider.value) : 0.5;
         window.backgroundMusic = backgroundMusic;
       }
       backgroundMusic.play().catch(error => console.error("Error playing background music:", error));

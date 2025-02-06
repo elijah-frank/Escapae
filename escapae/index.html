@@ -88,6 +88,21 @@
       cursor: pointer;
       z-index: 10;
     }
+    #debugConsole {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      width: 300px;
+      height: 200px;
+      background: rgba(0,0,0,0.8);
+      color: #0f0;
+      font-family: monospace;
+      font-size: 12px;
+      overflow-y: auto;
+      z-index: 1000;
+      padding: 5px;
+    }
     @media (max-width: 768px) {
       :root {
         --game-scale: 0.65;
@@ -119,7 +134,7 @@
     <button id="upBtn" class="up">⇧</button>
     <div class="middle-row">
       <button id="leftBtn" class="left">⇦</button>
-      <button id="pauseButton">=</button>
+      <button id="pauseButton">⏸️</button>
       <button id="rightBtn" class="right">⇨</button>
     </div>
     <button id="downBtn" class="down">⇩</button>
@@ -161,6 +176,7 @@
       <button id="backBtn" style="padding: 10px 20px; font-size: 1.5rem; margin-top:10px;">Back</button>
     </div>
   </div>
+  <div id="debugConsole"></div>
   <script src="./src/main.js"></script>
   <script>
     // Initialize zoom slider with current scale
@@ -194,11 +210,11 @@
     });
     document.getElementById('volumeSlider').addEventListener('input', function() {
       if (window.backgroundMusic) {
-        window.backgroundMusic.volume = this.value;
+        window.backgroundMusic.volume = parseFloat(this.value);
       }
     });
     document.getElementById('sfxSlider').addEventListener('input', function() {
-      window.setSfxVolume(this.value);
+      window.setSfxVolume(parseFloat(this.value));
     });
     document.getElementById('pauseButton').addEventListener('click', () => {
       togglePause();
@@ -211,6 +227,37 @@
       document.getElementById('controlsMenu').style.display = "none";
       document.getElementById('settingsMenu').style.display = "flex";
     });
+    (function(){
+      var debugEnabled = false;
+      var debugConsole = document.getElementById("debugConsole");
+      var origLog = console.log;
+      var origWarn = console.warn;
+      var origError = console.error;
+      function writeToConsole() {
+        var args = Array.prototype.slice.call(arguments);
+        var msg = args.map(a => typeof a === "object" ? JSON.stringify(a) : a).join(" ");
+        debugConsole.innerHTML += msg + "<br>";
+        debugConsole.scrollTop = debugConsole.scrollHeight;
+      }
+      console.log = function() {
+        origLog.apply(console, arguments);
+        if (debugEnabled) { writeToConsole.apply(null, arguments); }
+      };
+      console.warn = function() {
+        origWarn.apply(console, arguments);
+        if (debugEnabled) { writeToConsole.apply(null, arguments); }
+      };
+      console.error = function() {
+        origError.apply(console, arguments);
+        if (debugEnabled) { writeToConsole.apply(null, arguments); }
+      };
+      function updateDebugVisibility() {
+        debugEnabled = document.getElementById("debugToggle").checked;
+        debugConsole.style.display = debugEnabled ? "block" : "none";
+      }
+      document.getElementById("debugToggle").addEventListener("change", updateDebugVisibility);
+      updateDebugVisibility();
+    })();
   </script>
 </body>
 </html> 
