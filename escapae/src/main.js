@@ -846,9 +846,6 @@
       
       ctx.font = '40px monospace';
       ctx.fillText("Press SPACE or click Start to begin your escape", canvas.width / 2, canvas.height / 2 + 100);
-      
-      ctx.font = '30px monospace';
-      ctx.fillText("High Score: " + (localStorage.getItem("highScore") || 0), canvas.width / 2, canvas.height / 2 + 140);
     }
   
     initializeStars();
@@ -1089,21 +1086,6 @@
       if (backgroundMusic) {
         backgroundMusic.volume = targetVolume;
       }
-    }
-
-    function updateHighScore() {
-        fetch("http://localhost:3000/api/highscore", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ game: "escapae", score: score })
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Update display
-            document.getElementById("globalHighScore").innerText = 
-                "High Score: " + data.highScore;
-        })
-        .catch(error => console.error("Error updating high score:", error));
     }
 })();
   
