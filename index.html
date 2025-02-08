@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MC Games</title>
+  <link rel="icon" href="favicon.ico">
   <style>
     body {
       margin: 0;
@@ -28,6 +29,10 @@
       border: none;
       cursor: pointer;
     }
+    /* Optional: remove default focus outline on buttons */
+    button:focus {
+      outline: none;
+    }
   </style>
 </head>
 <body>
@@ -38,7 +43,7 @@
     fetch("http://localhost:3000/api/highscore?game=escapae")
       .then(response => response.json())
       .then(data => {
-        document.getElementById("globalHighScore").innerText = "High Score: " + data.highScore;
+        document.getElementById("globalHighScore").innerText = "High Score: " + data.score;
       })
       .catch(error => console.error("Error fetching high score:", error));
   </script>
