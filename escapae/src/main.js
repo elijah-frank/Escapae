@@ -6,57 +6,49 @@
     let gameOverTimer = 0;
     const GAME_OVER_DURATION = 5000;
   
-    let dotX, dotY;
+    // Player variables
+    let playerX, playerY;
+    const playerSize = 10;
+    let playerColor = 'yellow';
+    let playerSlipAmount = 0;
+    let playerControlDisabledUntil = 0;
+    let playerInvincibleUntil = 0;
+    let playerSpeedBoostUntil = 0;
+    let lives = 3;
+  
     let angle = 0;
     const speed = 1.2;
-    const dotSize = 10;
   
+    // Chaser variables
     let chasers = [];
     const INITIAL_CHASER_SIZE = 120;
     const CHASER_SPEED = 1.1;
     const REPULSION_STRENGTH = 0.5;
     const REPULSION_DISTANCE = 150;
-    const SPREAD_TIME = 2000; // Time in ms for initial spreading
+    const SPREAD_TIME = 2000;
     let spreadStartTime = 0;
   
+    // Collectibles and score
     let collectibles = [];
     let score = 0;
   
+    // Stars and mud patches
     let stars = [];
     let mudPatches = [];
     const MUD_AVOIDANCE_DISTANCE = 100;
     const MUD_AVOIDANCE_STRENGTH = 1.5;
-    let dotControlDisabledUntil = 0;
   
-    // Add dot color state
-    let dotColor = 'yellow';
-    let dotSlipAmount = 0;
-  
-    // Add constant for new chaser spawn distance
-    const MIN_SPAWN_DISTANCE = 180; // About 3 inches at typical screen DPI
-  
-    // Add health system variables
-    let lives = 3;
-    let dotInvincibleUntil = 0;
-  
-    // Add speed crate properties
+    // Speed crates and related boost
     let speedCrates = [];
-    const SPEED_BOOST_DURATION = 10000; // 10 seconds boost
+    const SPEED_BOOST_DURATION = 10000;
     const CRATE_SIZE = 25;
-    let dotSpeedBoostUntil = 0;
     let chaserSpeedIncrease = 0;
   
-    // Create (or reuse) a single AudioContext for your game
+    // Audio settings
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  
-    // Global variables for pause, MP3 audio, and sound effects volume
-    let paused = false;
-    let sfxVolume = 0.5;
-  
     let backgroundMusic;
-  
-    // Add these at the start of your code, with your other variables
     let audioContextUnlocked = false;
+    let sfxVolume = 0.5;
     let soundEffects = {
         slip: null,
         wood: null,
@@ -64,14 +56,13 @@
         key: null
     };
   
-    /**
-     * Starts an upbeat, layered background music loop.
-     * The chord layer (sine oscillators) provides a warm base while the
-     * melody layer (sawtooth oscillator) plays an arpeggio.
-     */
+    let globalHighScore = 0;
+    let paused = false;
+    let hasSubmittedScore = false;
+  
     function startBackgroundMusic() {
       if (!backgroundMusic) {
-        backgroundMusic = new Audio("/mc-games/escapae/assets/audio/myBackgroundTrack.mp3");
+        backgroundMusic = new Audio("assets/audio/myBackgroundTrack.mp3");
         backgroundMusic.loop = true;
         const volumeSlider = document.getElementById('volumeSlider');
         backgroundMusic.volume = volumeSlider ? volumeSlider.value : 0.5;
@@ -80,10 +71,6 @@
       backgroundMusic.play().catch(error => console.error("Error playing background music:", error));
     }
   
-    /**
-     * Plays a short "slip" sound.
-     * This function creates a burst of filtered white noise that fades out quickly.
-     */
     function playSlipSound() {
       if (soundEffects.slip) {
         console.log("Playing slip sound, volume:", sfxVolume);
@@ -101,7 +88,6 @@
       }
     }
   
-    // New function: play wood crackle sound when picking up a speed boost.
     function playWoodCrackleSound() {
       if (soundEffects.wood) {
         console.log("Playing wood sound, volume:", sfxVolume);
@@ -118,7 +104,6 @@
       }
     }
   
-    // New function: play hurt sound when the player is hurt.
     function playHurtSound() {
       if (soundEffects.hurt) {
         console.log("Playing hurt sound, volume:", sfxVolume);
@@ -135,7 +120,6 @@
       }
     }
   
-    // New function: play key pickup sound when the player collects a key.
     function playKeyPickupSound() {
       if (soundEffects.key) {
         console.log("Playing key sound, volume:", sfxVolume);
@@ -165,8 +149,8 @@
     }
 
     function initializeGamePositions() {
-      dotX = canvas.width / 2;
-      dotY = canvas.height / 2;
+      playerX = canvas.width / 2;
+      playerY = canvas.height / 2;
       chasers = [{
         x: INITIAL_CHASER_SIZE / 2,
         y: INITIAL_CHASER_SIZE / 2,
@@ -181,11 +165,14 @@
         size: 15
       }];
       mudPatches = [];
-      lives = 3;
-      dotInvincibleUntil = 0;
+      playerColor = 'yellow';
+      playerSlipAmount = 0;
+      playerControlDisabledUntil = 0;
+      playerInvincibleUntil = 0;
       speedCrates = [];
-      dotSpeedBoostUntil = 0;
+      playerSpeedBoostUntil = 0;
       chaserSpeedIncrease = 0;
+      lives = 3;
     }
   
     function startGame() {
@@ -214,13 +201,17 @@
 
       console.log("Sound effects initialized:", soundEffects);
 
+      const backBtn = document.querySelector('#backToGamesBtn');
+      if (backBtn) {
+        backBtn.remove();
+      }
       gameState = "playing";
       startBtn.style.display = "none";
       document.getElementById("settingsMenu").style.display = "none";
       initializeGamePositions();
       score = 0;
       spreadStartTime = Date.now();
-      startMP3Background();
+      startBackgroundMusic();
     }
   
     const leftBtn = document.getElementById('leftBtn');
@@ -230,16 +221,16 @@
     const startBtn = document.getElementById('startBtn');
   
     leftBtn.addEventListener('click', () => {
-      if (gameState === "playing" && Date.now() >= dotControlDisabledUntil) angle = Math.PI;
+      if (gameState === "playing" && Date.now() >= playerControlDisabledUntil) angle = Math.PI;
     });
     rightBtn.addEventListener('click', () => {
-      if (gameState === "playing" && Date.now() >= dotControlDisabledUntil) angle = 0;
+      if (gameState === "playing" && Date.now() >= playerControlDisabledUntil) angle = 0;
     });
     upBtn.addEventListener('click', () => {
-      if (gameState === "playing" && Date.now() >= dotControlDisabledUntil) angle = -Math.PI / 2;
+      if (gameState === "playing" && Date.now() >= playerControlDisabledUntil) angle = -Math.PI / 2;
     });
     downBtn.addEventListener('click', () => {
-      if (gameState === "playing" && Date.now() >= dotControlDisabledUntil) angle = Math.PI / 2;
+      if (gameState === "playing" && Date.now() >= playerControlDisabledUntil) angle = Math.PI / 2;
     });
   
     document.addEventListener('keydown', (event) => {
@@ -249,7 +240,7 @@
         // Use Space to toggle pause/resume, while arrow keys move the dot.
         if (event.code === "Space") {
           togglePause();
-        } else if (Date.now() >= dotControlDisabledUntil) {
+        } else if (Date.now() >= playerControlDisabledUntil) {
           switch (event.key) {
             case 'ArrowLeft': angle = Math.PI; break;
             case 'ArrowRight': angle = 0; break;
@@ -274,7 +265,7 @@
           renderGame();
         } else if (gameState === "gameOver") {
           // Stop MP3 music when the game ends.
-          stopMP3Background();
+          stopBackgroundMusic();
           renderGameOver();
           if (Date.now() - gameOverTimer > GAME_OVER_DURATION) {
             gameState = "start";
@@ -291,20 +282,20 @@
     function updateGame() {
       // Update dot position with speed effects
       let currentSpeed = speed;
-      if (Date.now() < dotSpeedBoostUntil) {
+      if (Date.now() < playerSpeedBoostUntil) {
         currentSpeed = 2; // Boosted speed
-        dotColor = 'skyblue';
-      } else if (dotSlipAmount > 0) {
+        playerColor = 'skyblue';
+      } else if (playerSlipAmount > 0) {
         currentSpeed = speed * 3; // Mud slip effect
-        dotSlipAmount *= 0.95;
-        if (dotSlipAmount < 0.01) dotSlipAmount = 0;
-      } else if (dotColor !== 'yellow' && Date.now() >= dotControlDisabledUntil) {
-        dotColor = 'yellow';
+        playerSlipAmount *= 0.95;
+        if (playerSlipAmount < 0.01) playerSlipAmount = 0;
+      } else if (playerColor !== 'yellow' && Date.now() >= playerControlDisabledUntil) {
+        playerColor = 'yellow';
       }
       
-      dotX += currentSpeed * Math.cos(angle);
-      dotY += currentSpeed * Math.sin(angle);
-      wrapAround("dot");
+      playerX += currentSpeed * Math.cos(angle);
+      playerY += currentSpeed * Math.sin(angle);
+      wrapAround("player");
   
       // Update chaser positions with improved pathfinding
       chasers.forEach(chaser => {
@@ -332,11 +323,11 @@
           switch(chaser.aiType) {
             case 1: // Direct chase
               let paths = [
-                {x: dotX, y: dotY}, // Direct path
-                {x: dotX + canvas.width, y: dotY}, // Wrap right
-                {x: dotX - canvas.width, y: dotY}, // Wrap left
-                {x: dotX, y: dotY + canvas.height}, // Wrap down
-                {x: dotX, y: dotY - canvas.height} // Wrap up
+                {x: playerX, y: playerY}, // Direct path
+                {x: playerX + canvas.width, y: playerY}, // Wrap right
+                {x: playerX - canvas.width, y: playerY}, // Wrap left
+                {x: playerX, y: playerY + canvas.height}, // Wrap down
+                {x: playerX, y: playerY - canvas.height} // Wrap up
               ];
               
               // Find closest path accounting for mud
@@ -390,15 +381,15 @@
                 targetX = chaser.targetKey.x;
                 targetY = chaser.targetKey.y;
               } else {
-                targetX = dotX;
-                targetY = dotY;
+                targetX = playerX;
+                targetY = playerY;
               }
               break;
               
             case 3: // Prediction chase
               const predictionFactor = 20;
-              let predictedX = dotX + Math.cos(angle) * speed * predictionFactor;
-              let predictedY = dotY + Math.sin(angle) * speed * predictionFactor;
+              let predictedX = playerX + Math.cos(angle) * speed * predictionFactor;
+              let predictedY = playerY + Math.sin(angle) * speed * predictionFactor;
               
               // Find best wrap-around path to predicted position
               let predPaths = [
@@ -475,8 +466,8 @@
       // Player-key collision (keep existing logic for player collecting keys)
       for (let i = collectibles.length - 1; i >= 0; i--) {
         const item = collectibles[i];
-        const distance = distanceBetween(dotX, dotY, item.x, item.y);
-        if (distance < (dotSize / 2 + item.size / 2)) {
+        const distance = distanceBetween(playerX, playerY, item.x, item.y);
+        if (distance < (playerSize / 2 + item.size / 2)) {
           collectibles.splice(i, 1);
           score++;
           playKeyPickupSound();
@@ -484,9 +475,9 @@
           // Only 25% chance to split a slime when collecting a key
           if (chasers.length > 0 && Math.random() < 0.25) {
             let closestChaser = chasers[0];
-            let minDist = distanceBetween(dotX, dotY, closestChaser.x, closestChaser.y);
+            let minDist = distanceBetween(playerX, playerY, closestChaser.x, closestChaser.y);
             for (let ch of chasers) {
-              let d = distanceBetween(dotX, dotY, ch.x, ch.y);
+              let d = distanceBetween(playerX, playerY, ch.x, ch.y);
               if (d < minDist) {
                 minDist = d;
                 closestChaser = ch;
@@ -502,38 +493,38 @@
       }
   
       // Check mud collisions - now also removes speed boost and plays slip sound
-      if (Date.now() >= dotControlDisabledUntil) {
+      if (Date.now() >= playerControlDisabledUntil) {
         for (let mud of mudPatches) {
-          let dxMud = dotX - mud.x;
-          let dyMud = dotY - mud.y;
+          let dxMud = playerX - mud.x;
+          let dyMud = playerY - mud.y;
           let distance = Math.sqrt(dxMud * dxMud + dyMud * dyMud);
-          if (distance < (dotSize / 2 + mud.size / 2)) {
-            dotControlDisabledUntil = Date.now() + (3000 + mud.size * 20);
-            dotColor = '#8B4513';
-            dotSlipAmount = 1.0;
-            dotSpeedBoostUntil = 0; // Remove speed boost when hitting mud
+          if (distance < (playerSize / 2 + mud.size / 2)) {
+            playerControlDisabledUntil = Date.now() + (3000 + mud.size * 20);
+            playerColor = '#8B4513';
+            playerSlipAmount = 1.0;
+            playerSpeedBoostUntil = 0; // Remove speed boost when hitting mud
             playSlipSound();
           }
         }
       }
   
       // Gradually return dot to yellow only after slip effect is done
-      if (dotColor !== 'yellow' && Date.now() >= dotControlDisabledUntil && dotSlipAmount === 0) {
-        dotColor = 'yellow';
+      if (playerColor !== 'yellow' && Date.now() >= playerControlDisabledUntil && playerSlipAmount === 0) {
+        playerColor = 'yellow';
       }
   
       // Check collision between dot and chasers
-      if (checkCollision() && Date.now() > dotInvincibleUntil) {
+      if (checkCollision() && Date.now() > playerInvincibleUntil) {
         lives--;
         playHurtSound();
         if (lives <= 0) {
           gameState = "gameOver";
           gameOverTimer = Date.now();
         } else {
-          dotX = canvas.width / 2;
-          dotY = canvas.height / 2;
+          playerX = canvas.width / 2;
+          playerY = canvas.height / 2;
           angle = 0;
-          dotInvincibleUntil = Date.now() + 2000;
+          playerInvincibleUntil = Date.now() + 2000;
         }
       }
 
@@ -541,10 +532,10 @@
       for (let i = speedCrates.length - 1; i >= 0; i--) {
         const crate = speedCrates[i];
         // Check dot collision
-        if (distanceBetween(dotX, dotY, crate.x, crate.y) < (dotSize/2 + CRATE_SIZE/2)) {
+        if (distanceBetween(playerX, playerY, crate.x, crate.y) < (playerSize/2 + CRATE_SIZE/2)) {
           speedCrates.splice(i, 1);
-          dotSpeedBoostUntil = Date.now() + SPEED_BOOST_DURATION;
-          dotColor = 'skyblue';
+          playerSpeedBoostUntil = Date.now() + SPEED_BOOST_DURATION;
+          playerColor = 'skyblue';
           playWoodCrackleSound();
           continue;
         }
@@ -565,20 +556,20 @@
     }
   
     function wrapAround(type) {
-      if (type === "dot") {
-        if (dotX < 0) dotX = canvas.width;
-        else if (dotX > canvas.width) dotX = 0;
-        if (dotY < 0) dotY = canvas.height;
-        else if (dotY > canvas.height) dotY = 0;
+      if (type === "player") {
+        if (playerX < 0) playerX = canvas.width;
+        else if (playerX > canvas.width) playerX = 0;
+        if (playerY < 0) playerY = canvas.height;
+        else if (playerY > canvas.height) playerY = 0;
       }
     }
   
     function checkCollision() {
-      const dotRadius = dotSize / 2;
-      const dotLeft = dotX - dotRadius;
-      const dotRight = dotX + dotRadius;
-      const dotTop = dotY - dotRadius;
-      const dotBottom = dotY + dotRadius;
+      const dotRadius = playerSize / 2;
+      const dotLeft = playerX - dotRadius;
+      const dotRight = playerX + dotRadius;
+      const dotTop = playerY - dotRadius;
+      const dotBottom = playerY + dotRadius;
   
       for (let chaser of chasers) {
         const chaserLeft = chaser.x - chaser.size / 2;
@@ -647,17 +638,17 @@
       }
 
       // Draw the dot with current color (blink if invincible)
-      if (Date.now() < dotInvincibleUntil) {
+      if (Date.now() < playerInvincibleUntil) {
         if (Math.floor(Date.now() / 300) % 2 === 0) {
-          ctx.fillStyle = dotColor;
+          ctx.fillStyle = playerColor;
           ctx.beginPath();
-          ctx.arc(dotX, dotY, dotSize / 2, 0, Math.PI * 2);
+          ctx.arc(playerX, playerY, playerSize / 2, 0, Math.PI * 2);
           ctx.fill();
         }
       } else {
-        ctx.fillStyle = dotColor;
+        ctx.fillStyle = playerColor;
         ctx.beginPath();
-        ctx.arc(dotX, dotY, dotSize / 2, 0, Math.PI * 2);
+        ctx.arc(playerX, playerY, playerSize / 2, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -789,63 +780,98 @@
     }
   
     function renderGameOver() {
-      // Send score to backend
-      fetch("http://localhost:3000/api/highscore", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ game: "escapae", score: score })
-      })
-      .then(response => response.json())
-      .then(data => {
-        // Draw game over screen with high score from backend
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.fillStyle = 'red';
-        ctx.font = '80px monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
-        
-        ctx.fillStyle = 'white';
-        ctx.font = '40px monospace';
-        ctx.fillText("High Score: " + data.highScore, canvas.width / 2, canvas.height / 2 + 80);
-      })
-      .catch(error => {
-        console.error("Error updating high score:", error);
-        // Still show game over screen if high score update fails
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'red';
-        ctx.font = '80px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
-      });
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = 'red';
+      ctx.font = '80px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
+
+      if (!hasSubmittedScore) {
+        hasSubmittedScore = true;
+        fetch("http://localhost:3000/api/highscore", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ score: score })
+        })
+          .then(response => response.json())
+          .then(data => {
+            globalHighScore = data.score;
+            ctx.fillStyle = 'white';
+            ctx.font = '40px monospace';
+            ctx.fillText("High Score: " + data.score, canvas.width / 2, canvas.height / 2 + 80);
+            console.log("Updated global high score:", globalHighScore);
+          })
+          .catch(error => {
+            console.error("Error submitting high score:", error);
+            ctx.fillStyle = 'white';
+            ctx.font = '40px monospace';
+            ctx.fillText("High Score: " + score, canvas.width / 2, canvas.height / 2 + 80);
+          });
+      }
+
+      // Return to start screen after 5 seconds
+      if (Date.now() - gameOverTimer > GAME_OVER_DURATION) {
+        gameState = "start";
+        startBtn.style.display = "block";
+        hasSubmittedScore = false;
+      }
     }
   
     function renderStartScreen() {
+      // Dark blue background
       ctx.fillStyle = '#000033';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
+
+      // Draw stars (assuming you have the stars array)
       for (let star of stars) {
         ctx.fillStyle = 'yellow';
         ctx.beginPath();
         ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
         ctx.fill();
       }
-  
+
+      // Text settings
       ctx.fillStyle = 'white';
       ctx.textAlign = 'center';
       
+      // Title
       ctx.font = '60px monospace';
       ctx.fillText("Welcome to Escapae!", canvas.width / 2, canvas.height / 2 - 100);
       
+      // Game description (split into two lines)
       ctx.font = '30px monospace';
       ctx.fillText("Deep underground, collect golden keys while avoiding giant slimes", canvas.width / 2, canvas.height / 2 - 20);
       ctx.fillText("and mud patches. Find enough keys to help you escapae!", canvas.width / 2, canvas.height / 2 + 20);
       
+      // Start instruction
       ctx.font = '40px monospace';
       ctx.fillText("Press SPACE or click Start to begin your escape", canvas.width / 2, canvas.height / 2 + 100);
+
+      // Add back button (styled to match the game's aesthetic)
+      const backBtn = document.createElement('button');
+      backBtn.innerText = "Back";
+      backBtn.style.position = 'absolute';
+      backBtn.style.left = '20px';
+      backBtn.style.top = '20px';
+      backBtn.style.padding = '10px 20px';
+      backBtn.style.fontSize = '20px';
+      backBtn.style.backgroundColor = 'black';
+      backBtn.style.color = 'white';
+      backBtn.style.border = '2px solid white';
+      backBtn.style.cursor = 'pointer';
+      backBtn.style.fontFamily = 'monospace';
+      
+      if (!document.querySelector('#backToGamesBtn')) {
+        backBtn.id = 'backToGamesBtn';
+        document.body.appendChild(backBtn);
+        
+        backBtn.addEventListener('click', () => {
+          window.location.href = '/mc-games/';
+        });
+      }
     }
   
     initializeStars();
@@ -968,7 +994,7 @@
     function splitChaser(chaser, keyTarget, newAiType) {
       if (chaser.size < 20) return [chaser];
       let newSize = chaser.size * 0.7;
-      let angleToPlayer = Math.atan2(dotY - chaser.y, dotX - chaser.x);
+      let angleToPlayer = Math.atan2(playerY - chaser.y, playerX - chaser.x);
       let offset = chaser.size / 2;
       const chaser1 = {
         x: chaser.x + offset * Math.cos(angleToPlayer + 0.3),
@@ -1042,7 +1068,7 @@
     }
 
     // New function to stop the MP3 background music.
-    function stopMP3Background() {
+    function stopBackgroundMusic() {
       if (backgroundMusic) {
         backgroundMusic.pause();
         backgroundMusic.currentTime = 0;
@@ -1053,15 +1079,7 @@
     function togglePause() {
       paused = !paused;
       const settingsMenu = document.getElementById("settingsMenu");
-      if (paused) {
-        // Show the settings overlay using flex (to center its contents)
-        settingsMenu.style.display = "flex";
-        // Do not stop music on pause (only on game end)
-      } else {
-        // Hide the settings overlay.
-        settingsMenu.style.display = "none";
-        // Do not resume MP3 (music continues playing)
-      }
+      settingsMenu.style.display = paused ? "flex" : "none";
     }
     window.togglePause = togglePause;  // expose togglePause globally for button access
     window.setSfxVolume = function(val) { sfxVolume = val; };
@@ -1087,5 +1105,29 @@
         backgroundMusic.volume = targetVolume;
       }
     }
+
+    // Function to fetch the current high score from the backend
+    function fetchHighScore() {
+      fetch("http://localhost:3000/api/highscore")
+        .then(response => response.json())
+        .then(data => {
+          globalHighScore = data.score || 0;
+          console.log("Fetched high score:", globalHighScore);
+        })
+        .catch(error => {
+          console.error("Error fetching high score:", error);
+          globalHighScore = 0;
+        });
+    }
+
+    // Immediately fetch the high score on game load
+    fetchHighScore();
+
+    // Debug: Press "T" to test and display the current high score
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "t" || e.key === "T") {
+        alert("Current High Score: " + globalHighScore);
+      }
+    });
 })();
   
