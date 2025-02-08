@@ -3,49 +3,129 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MC Games</title>
-  <link rel="icon" href="favicon.ico">
+  <title>Escapae - A Slime Escape Game</title>
   <style>
     body {
       margin: 0;
-      background-color: white;
-      color: black;
-      font-family: sans-serif;
-      position: relative;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #000;
+      font-family: monospace;
     }
-    h1 {
-      text-align: center;
-      margin-top: 50px;
+    
+    #gameCanvas {
+      border: 2px solid #333;
     }
-    .game-box {
-      position: absolute;
-      top: 100px;
-      left: 20px;
-      background-color: black;
-      color: yellow;
-      padding: 15px 20px;
-      font-size: 2rem;
-      text-decoration: none;
-      border: none;
+    
+    .controls {
+      position: fixed;
+      bottom: 20px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      padding: 10px;
+    }
+    
+    .controls button {
+      padding: 15px;
+      font-size: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid white;
+      color: white;
       cursor: pointer;
     }
-    /* Optional: remove default focus outline on buttons */
-    button:focus {
-      outline: none;
+    
+    #startBtn {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 20px 40px;
+      font-size: 24px;
+      background: black;
+      border: 2px solid white;
+      color: white;
+      cursor: pointer;
+      font-family: monospace;
+    }
+    
+    #pauseButton {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      font-size: 20px;
+      background: black;
+      border: 2px solid white;
+      color: white;
+      cursor: pointer;
+      font-family: monospace;
+    }
+    
+    #settingsMenu {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.9);
+      padding: 20px;
+      border: 2px solid white;
+      color: white;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    #settingsMenu button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: black;
+      border: 2px solid white;
+      color: white;
+      cursor: pointer;
+      font-family: monospace;
+    }
+    
+    #volumeSlider {
+      width: 200px;
+    }
+    
+    #debugToggle {
+      margin-right: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>Welcome to MC Games</h1>
-  <a href="/mc-games/escapae" class="game-box">Escapae</a>
-  <div id="globalHighScore"></div>
-  <script>
-    fetch("http://localhost:3000/api/highscore?game=escapae")
-      .then(response => response.json())
-      .then(data => {
-        document.getElementById("globalHighScore").innerText = "High Score: " + data.score;
-      })
-      .catch(error => console.error("Error fetching high score:", error));
-  </script>
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
+  <button id="startBtn">Start Game</button>
+  <button id="pauseButton" onclick="togglePause()">Pause</button>
+  
+  <div class="controls">
+    <button id="leftBtn">←</button>
+    <button id="upBtn">↑</button>
+    <button id="rightBtn">→</button>
+    <div></div>
+    <button id="downBtn">↓</button>
+  </div>
+  
+  <div id="settingsMenu">
+    <h2>Settings</h2>
+    <div>
+      <label for="volumeSlider">Volume:</label>
+      <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="0.5" 
+             oninput="setSfxVolume(this.value)">
+    </div>
+    <div>
+      <label for="debugToggle">Debug Mode:</label>
+      <input type="checkbox" id="debugToggle">
+    </div>
+    <button onclick="togglePause()">Resume</button>
+  </div>
+  
+  <script type="module" src="dist/main.js"></script>
 </body>
 </html>

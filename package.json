@@ -1,0 +1,16 @@
+{
+  "name": "escapae-game",
+  "version": "1.0.0",
+  "description": "A TypeScript browser game where you escape from slimes",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "start": "lite-server"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "lite-server": "^2.6.1",
+    "@types/node": "^18.0.0"
+  }
+} 
