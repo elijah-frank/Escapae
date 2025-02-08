@@ -45,96 +45,79 @@
     let chaserSpeedIncrease = 0;
   
     // Audio settings
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    let backgroundMusic;
-    let audioContextUnlocked = false;
-    let sfxVolume = 0.5;
-    let soundEffects = {
-        slip: null,
-        wood: null,
-        hurt: null,
-        key: null
+    const audioManager = {
+        audioContext: new (window.AudioContext || window.webkitAudioContext)(),
+        backgroundMusic: null,
+        audioContextUnlocked: false,
+        sfxVolume: 0.5,
+        soundEffects: { slip: null, wood: null, hurt: null, key: null },
+        startBackgroundMusic: function() {
+            if (!this.backgroundMusic) {
+                this.backgroundMusic = new Audio("assets/audio/myBackgroundTrack.mp3");
+                this.backgroundMusic.loop = true;
+                const volumeSlider = document.getElementById('volumeSlider');
+                this.backgroundMusic.volume = volumeSlider ? volumeSlider.value : 0.5;
+                window.backgroundMusic = this.backgroundMusic;
+            }
+            this.backgroundMusic.play().catch(error => console.error("Error playing background music:", error));
+        },
+        playSlipSound: function() {
+            if (this.soundEffects.slip) {
+                console.log("Playing slip sound, volume:", this.sfxVolume);
+                this.soundEffects.slip.currentTime = 0;
+                this.soundEffects.slip.volume = this.sfxVolume;
+                this.soundEffects.slip.play().catch(error => { console.error("Failed to play slip sound:", error); });
+                setTimeout(() => { this.soundEffects.slip.volume = 0.01; }, 1000);
+            } else { console.log("Slip sound not initialized"); }
+        },
+        playWoodCrackleSound: function() {
+            if (this.soundEffects.wood) {
+                console.log("Playing wood sound, volume:", this.sfxVolume);
+                this.soundEffects.wood.currentTime = 0;
+                this.soundEffects.wood.volume = this.sfxVolume;
+                this.soundEffects.wood.play().catch(error => { console.error("Failed to play wood sound:", error); });
+                setTimeout(() => { this.soundEffects.wood.volume = 0.01; }, 1000);
+            } else { console.log("Wood sound not initialized"); }
+        },
+        playHurtSound: function() {
+            if (this.soundEffects.hurt) {
+                console.log("Playing hurt sound, volume:", this.sfxVolume);
+                this.soundEffects.hurt.currentTime = 0;
+                this.soundEffects.hurt.volume = this.sfxVolume;
+                this.soundEffects.hurt.play().catch(error => { console.error("Failed to play hurt sound:", error); });
+                setTimeout(() => { this.soundEffects.hurt.volume = 0.01; }, 1000);
+            } else { console.log("Hurt sound not initialized"); }
+        },
+        playKeyPickupSound: function() {
+            if (this.soundEffects.key) {
+                console.log("Playing key sound, volume:", this.sfxVolume);
+                this.soundEffects.key.currentTime = 0;
+                this.soundEffects.key.volume = this.sfxVolume;
+                this.soundEffects.key.play().catch(error => { console.error("Failed to play key sound:", error); });
+                setTimeout(() => { this.soundEffects.key.volume = 0.01; }, 1000);
+            } else { console.log("Key sound not initialized"); }
+        },
+        startMP3Background: function() {
+            if (!this.backgroundMusic) {
+                this.backgroundMusic = new Audio("assets/audio/myBackgroundTrack.mp3");
+                this.backgroundMusic.loop = true;
+                const volumeSlider = document.getElementById("volumeSlider");
+                this.backgroundMusic.volume = volumeSlider ? parseFloat(volumeSlider.value) : 0.5;
+                window.backgroundMusic = this.backgroundMusic;
+            }
+            this.backgroundMusic.play().catch(error => console.error("Error playing background music:", error));
+        },
+        stopBackgroundMusic: function() {
+            if (this.backgroundMusic) {
+                this.backgroundMusic.pause();
+                this.backgroundMusic.currentTime = 0;
+            }
+        }
     };
   
     let globalHighScore = 0;
     let paused = false;
     let hasSubmittedScore = false;
-  
-    function startBackgroundMusic() {
-      if (!backgroundMusic) {
-        backgroundMusic = new Audio("assets/audio/myBackgroundTrack.mp3");
-        backgroundMusic.loop = true;
-        const volumeSlider = document.getElementById('volumeSlider');
-        backgroundMusic.volume = volumeSlider ? volumeSlider.value : 0.5;
-        window.backgroundMusic = backgroundMusic;
-      }
-      backgroundMusic.play().catch(error => console.error("Error playing background music:", error));
-    }
-  
-    function playSlipSound() {
-      if (soundEffects.slip) {
-        console.log("Playing slip sound, volume:", sfxVolume);
-        soundEffects.slip.currentTime = 0;
-        soundEffects.slip.volume = sfxVolume;
-        soundEffects.slip.play().catch(error => {
-          console.error("Failed to play slip sound:", error);
-        });
-        // Reset volume after playing
-        setTimeout(() => {
-          soundEffects.slip.volume = 0.01;
-        }, 1000);
-      } else {
-        console.log("Slip sound not initialized");
-      }
-    }
-  
-    function playWoodCrackleSound() {
-      if (soundEffects.wood) {
-        console.log("Playing wood sound, volume:", sfxVolume);
-        soundEffects.wood.currentTime = 0;
-        soundEffects.wood.volume = sfxVolume;
-        soundEffects.wood.play().catch(error => {
-          console.error("Failed to play wood sound:", error);
-        });
-        setTimeout(() => {
-          soundEffects.wood.volume = 0.01;
-        }, 1000);
-      } else {
-        console.log("Wood sound not initialized");
-      }
-    }
-  
-    function playHurtSound() {
-      if (soundEffects.hurt) {
-        console.log("Playing hurt sound, volume:", sfxVolume);
-        soundEffects.hurt.currentTime = 0;
-        soundEffects.hurt.volume = sfxVolume;
-        soundEffects.hurt.play().catch(error => {
-          console.error("Failed to play hurt sound:", error);
-        });
-        setTimeout(() => {
-          soundEffects.hurt.volume = 0.01;
-        }, 1000);
-      } else {
-        console.log("Hurt sound not initialized");
-      }
-    }
-  
-    function playKeyPickupSound() {
-      if (soundEffects.key) {
-        console.log("Playing key sound, volume:", sfxVolume);
-        soundEffects.key.currentTime = 0;
-        soundEffects.key.volume = sfxVolume;
-        soundEffects.key.play().catch(error => {
-          console.error("Failed to play key sound:", error);
-        });
-        setTimeout(() => {
-          soundEffects.key.volume = 0.01;
-        }, 1000);
-      } else {
-        console.log("Key sound not initialized");
-      }
-    }
   
     function initializeStars() {
       stars = [];
@@ -176,30 +159,30 @@
     }
   
     function startGame() {
-      if (!audioContextUnlocked) {
+      if (!audioManager.audioContextUnlocked) {
         // Create a silent buffer to unlock audio
-        const buffer = audioContext.createBuffer(1, 1, 22050);
-        const source = audioContext.createBufferSource();
+        const buffer = audioManager.audioContext.createBuffer(1, 1, 22050);
+        const source = audioManager.audioContext.createBufferSource();
         source.buffer = buffer;
-        source.connect(audioContext.destination);
+        source.connect(audioManager.audioContext.destination);
         source.start(0);
 
         // Preload all sound effects with relative paths
-        soundEffects.slip = new Audio("assets/audio/cartoon-yoink-1-183915.mp3");
-        soundEffects.wood = new Audio("assets/audio/wood-break-small-2-45921.mp3");
-        soundEffects.hurt = new Audio("assets/audio/oof-sound-effect-147492.mp3");
-        soundEffects.key = new Audio("assets/audio/metal-clang-284809.mp3");
+        audioManager.soundEffects.slip = new Audio("assets/audio/cartoon-yoink-1-183915.mp3");
+        audioManager.soundEffects.wood = new Audio("assets/audio/wood-break-small-2-45921.mp3");
+        audioManager.soundEffects.hurt = new Audio("assets/audio/oof-sound-effect-147492.mp3");
+        audioManager.soundEffects.key = new Audio("assets/audio/metal-clang-284809.mp3");
 
         // Preload all sounds and set initial volume
-        Object.values(soundEffects).forEach(sound => {
+        Object.values(audioManager.soundEffects).forEach(sound => {
             sound.load();
-            sound.volume = sfxVolume;
+            sound.volume = audioManager.sfxVolume;
         });
 
-        audioContextUnlocked = true;
+        audioManager.audioContextUnlocked = true;
       }
 
-      console.log("Sound effects initialized:", soundEffects);
+      console.log("Sound effects initialized:", audioManager.soundEffects);
 
       const backBtn = document.querySelector('#backToGamesBtn');
       if (backBtn) {
@@ -211,7 +194,7 @@
       initializeGamePositions();
       score = 0;
       spreadStartTime = Date.now();
-      startBackgroundMusic();
+      audioManager.startBackgroundMusic();
     }
   
     const leftBtn = document.getElementById('leftBtn');
@@ -252,8 +235,8 @@
     });
   
     startBtn.addEventListener('click', () => {
-      if (audioContext.state === 'suspended') {
-        audioContext.resume();
+      if (audioManager.audioContext.state === 'suspended') {
+        audioManager.audioContext.resume();
       }
       startGame();
     });
@@ -265,7 +248,7 @@
           renderGame();
         } else if (gameState === "gameOver") {
           // Stop MP3 music when the game ends.
-          stopBackgroundMusic();
+          audioManager.stopBackgroundMusic();
           renderGameOver();
           if (Date.now() - gameOverTimer > GAME_OVER_DURATION) {
             gameState = "start";
@@ -470,7 +453,7 @@
         if (distance < (playerSize / 2 + item.size / 2)) {
           collectibles.splice(i, 1);
           score++;
-          playKeyPickupSound();
+          audioManager.playKeyPickupSound();
           
           // Only 25% chance to split a slime when collecting a key
           if (chasers.length > 0 && Math.random() < 0.25) {
@@ -503,7 +486,7 @@
             playerColor = '#8B4513';
             playerSlipAmount = 1.0;
             playerSpeedBoostUntil = 0; // Remove speed boost when hitting mud
-            playSlipSound();
+            audioManager.playSlipSound();
           }
         }
       }
@@ -516,7 +499,7 @@
       // Check collision between dot and chasers
       if (checkCollision() && Date.now() > playerInvincibleUntil) {
         lives--;
-        playHurtSound();
+        audioManager.playHurtSound();
         if (lives <= 0) {
           gameState = "gameOver";
           gameOverTimer = Date.now();
@@ -536,7 +519,7 @@
           speedCrates.splice(i, 1);
           playerSpeedBoostUntil = Date.now() + SPEED_BOOST_DURATION;
           playerColor = 'skyblue';
-          playWoodCrackleSound();
+          audioManager.playWoodCrackleSound();
           continue;
         }
         // Check chaser collisions
@@ -1054,27 +1037,6 @@
       }
     }
 
-    // New function to play an MP3 track in the background
-    function startMP3Background() {
-      if (!backgroundMusic) {
-        // Use a relative path based on index.html location
-        backgroundMusic = new Audio("assets/audio/myBackgroundTrack.mp3");
-        backgroundMusic.loop = true;
-        const volumeSlider = document.getElementById("volumeSlider");
-        backgroundMusic.volume = volumeSlider ? parseFloat(volumeSlider.value) : 0.5;
-        window.backgroundMusic = backgroundMusic;
-      }
-      backgroundMusic.play().catch(error => console.error("Error playing background music:", error));
-    }
-
-    // New function to stop the MP3 background music.
-    function stopBackgroundMusic() {
-      if (backgroundMusic) {
-        backgroundMusic.pause();
-        backgroundMusic.currentTime = 0;
-      }
-    }
-
     // New function to toggle pause/resume.
     function togglePause() {
       paused = !paused;
@@ -1082,7 +1044,7 @@
       settingsMenu.style.display = paused ? "flex" : "none";
     }
     window.togglePause = togglePause;  // expose togglePause globally for button access
-    window.setSfxVolume = function(val) { sfxVolume = val; };
+    window.setSfxVolume = function(val) { audioManager.sfxVolume = val; };
 
     // New function to hide or display on-screen controls.
     function updateControlsVisibility() {
@@ -1101,8 +1063,8 @@
     }
 
     function adjustBackgroundVolume(targetVolume) {
-      if (backgroundMusic) {
-        backgroundMusic.volume = targetVolume;
+      if (audioManager.backgroundMusic) {
+        audioManager.backgroundMusic.volume = targetVolume;
       }
     }
 
